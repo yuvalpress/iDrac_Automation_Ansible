@@ -1,0 +1,6 @@
+#all_idrac_baseConf.yml
+---
+- import_playbook: idrac_network_excel.yml
+- import_playbook: idrac_name_excel.yml
+- import_playbook: idrac_vconsole_excel.yml
+- import_playbook: idrac_timezone_excel.yml

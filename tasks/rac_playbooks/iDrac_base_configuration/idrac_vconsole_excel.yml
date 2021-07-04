@@ -1,0 +1,49 @@
+#idrac_vconsole_excel.yml
+---
+- name: Set iDrac Virtual Console
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    search_range:
+      start_col: 1
+      end_col: 6
+      start_row: 2
+
+  vars_files: ../../../vars/passwords.yml
+
+  tasks:
+    - name: Retrive iDrac Data
+      open_excel:
+        src: ../../../files/project_configuration_sample.xlsx
+        sheet_name: iDrac_Basic
+        op: "r"
+        read_range: "{{ search_range }}"
+      register: data
+      ignore_errors: true
+
+    - name: set idrac.VirtualConsole.pluginetype java
+      raw: racadm -r "{{ item.address }}" -u "{{ iDRAC_Username }}" -p "{{ iDRAC_Password }}" set idrac.VirtualConsole.plugintype "{{ item.virtual_console_state }}"
+      when:
+        - "item.virtual_console_state != 'N/A'"
+        - "item.address != 'N/A'"
+      loop: "{{ data.sheet_index_0 }}"
+
+    - name: Check if changed
+      raw: racadm -r "{{ item.address }}" -u "{{ iDRAC_Username }}" -p "{{ iDRAC_Password }}" get idrac.VirtualConsole.plugintype
+      when:
+        - "item.virtual_console_state != 'N/A'"
+        - "item.address != 'N/A'"
+      loop: "{{ data.sheet_index_0 }}"
+      register: check
+
+    - name: Debug
+      debug:
+        msg: "{% if 'PluginType=1' in item.stdout_lines[7] %} Virtual Console plugin type for idrac ip '{{ item.item.address }}' has been changed Successfully {% else %} Virtual Console plugin type configuration for idrac ip '{{ item.item.address }}' had encountered a problem while executing racadm command. {% endif %}"
+      when:
+        - "item.item.virtual_console_state != 'N/A'"
+        - "item.item.address != 'N/A'"
+      loop: "{{ check.results }}"
+      loop_control:
+        label: "{{ item.item.address }} {{ item.item.virtual_console_state }}"

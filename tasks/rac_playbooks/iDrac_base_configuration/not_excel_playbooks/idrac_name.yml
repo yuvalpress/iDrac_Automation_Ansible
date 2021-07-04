@@ -1,0 +1,18 @@
+#idrac_name.yml
+---
+- name: Set iDrac name
+  hosts: iDrac
+  vars_files: ../../../vars/passwords.yml
+  connection: local
+  tasks:
+    - name: Set iDRAC.Nic.DNSRacName
+      raw: racadm -r "{{ inventory_hostname }}" -u "{{ iDRAC_Username }}" -p "{{ iDRAC_Password }}" Set iDRAC.Nic.DNSRacName iDRAC-testing
+
+    - name: Check if changed
+      raw: racadm -r "{{ inventory_hostname }}" -u "{{ iDRAC_Username }}" -p "{{ iDRAC_Password }}" get iDRAC.Nic.DNSRacName
+      register: check
+
+    - name: Debug
+      debug:
+        msg: "{% if 'DNSRacName=iDRAC-testing' in check.stdout_lines %} iDrac Name for idrac ip '{{ inventory_hostname }}' has been chenged Successfully {% else %} iDrac Name changeing process for idrac ip '{{ inventory_hostname }}' has encountered a problem while executing racadm command. {% endif %}"
+

@@ -1,0 +1,55 @@
+#idrac_name_excel.yml
+---
+- name: Set iDrac name
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    search_range:
+      start_col: 1
+      end_col: 6
+      start_row: 2
+
+  vars_files: ../../../vars/passwords.yml
+
+  tasks:
+    - name: Retrive iDrac Data
+      open_excel:
+        src: ../../../files/project_configuration_sample.xlsx
+        sheet_name: iDrac_Basic
+        op: "r"
+        read_range: "{{ search_range }}"
+      register: data
+      ignore_errors: true
+
+    - name: Set iDRAC.Nic.DNSRacName
+      raw: racadm -r "{{ item.address }}" -u "{{ iDRAC_Username }}" -p "{{ iDRAC_Password }}" set iDRAC.Nic.DNSRacName "{{ item.idrac_name }}"
+      when:
+        - "item.idrac_name != 'N/A'"
+        - "item.address != 'N/A'"
+      loop: "{{ data.sheet_index_0 }}"
+      ignore_errors: true
+
+    - name: Check if changed
+      raw: racadm -r "{{ item.address }}" -u "{{ iDRAC_Username }}" -p "{{ iDRAC_Password }}" get iDRAC.Nic.DNSRacName
+      when:
+        - "item.idrac_name != 'N/A'"
+        - "item.address != 'N/A'"
+      loop: "{{ data.sheet_index_0 }}"
+      loop_control:
+        label: "{{ item.address }}"
+      register: check
+
+    - name: Debug
+      debug:
+        msg: "{% if item.item.idrac_name in item.stdout_lines[7] %} iDrac Name for idrac ip '{{ item.item.address }}' has been chenged Successfully {% else %} iDrac Name changeing process for idrac ip '{{ item.item.address }}' has encountered a problem while executing racadm command. {% endif %}"
+      when:
+        - "item.item.idrac_name != 'N/A'"
+        - "item.item.address != 'N/A'"
+      loop: "{{ check.results }}"
+      loop_control:
+        label: "{{ item.item.idrac_name }} {{ item.item.address }}"
+
+
+

@@ -1,0 +1,18 @@
+#idrac_vconsole.yml
+---
+- name: Set iDrac Virtual Console
+  hosts: iDrac
+  vars_files: ../../../vars/passwords.yml
+  connection: local
+  gather_facts: no
+  tasks:
+    - name: set idrac.VirtualConsole.pluginetype java
+      raw: racadm -r "{{ inventory_hostname }}" -u "{{ iDRAC_Username }}" -p "{{ iDRAC_Password }}" set idrac.VirtualConsole.plugintype java
+
+    - name: Debug command output
+      raw: racadm -r "{{ inventory_hostname }}" -u "{{ iDRAC_Username }}" -p "{{ iDRAC_Password }}" get idrac.VirtualConsole.plugintype
+      register: check
+
+    - name: Debug
+      debug:
+        msg: "{% if 'PluginType=1' in check.stdout_lines %} Virtual Console plugin type for idrac ip '{{ inventory_hostname }}' has been changed Successfully {% else %} Virtual Console plugin type configuration for idrac ip '{{ inventory_hostname }}' had encountered a problem while executing racadm command. {% endif %}"

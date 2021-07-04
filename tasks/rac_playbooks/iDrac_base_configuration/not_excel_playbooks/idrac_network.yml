@@ -1,0 +1,18 @@
+#idrac_network.yml
+---
+- name: Set iDrac network address
+  hosts: iDrac
+  vars_files: ../../../vars/passwords.yml
+  connection: local
+  tasks:
+    - name: setniccfg
+      raw: racadm -r "{{ inventory_hostname }}" -u "{{ iDRAC_Username }}" -p "{{ iDRAC_Password }}" Setniccfg -s 192.168.0.140 255.255.255.0 192.168.0.245
+
+    - name: Check if changed
+      raw: racadm -r "{{ inventory_hostname }}" -u "{{ iDRAC_Username }}" -p "{{ iDRAC_Password }}" get iDRAC.ipv4
+      register: check
+
+    - name: Debug
+      debug:
+        msg: "{% if 'Address=192.168.0.140' in check.stdout_lines %} iDrac Network configuration process for idrac ip '{{ inventory_hostname }}' has been executed Successfully {% else %} iDrac Network configuration process for idrac ip '{{ inventory_hostname }}' has encountered a problem while executing racadm command. {% endif %}"
+
